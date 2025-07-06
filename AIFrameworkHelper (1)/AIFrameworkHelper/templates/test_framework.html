@@ -1,0 +1,341 @@
+{% extends "base.html" %}
+
+{% block title %}Test Framework - AI Orchestration Framework{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="h2 mb-4">
+            <i data-feather="play" class="me-2"></i>
+            Test Framework
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Test Form -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i data-feather="edit" class="me-2"></i>
+                    Submit Test Request
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('api.submit_test') }}" id="test-form">
+                    <div class="mb-3">
+                        <label for="prompt" class="form-label">Prompt *</label>
+                        <textarea class="form-control" id="prompt" name="prompt" rows="4" 
+                                  placeholder="Enter your prompt here..." required>{{ last_prompt or '' }}</textarea>
+                        <div class="form-text">Describe the task you want the AI to perform.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="task_type" class="form-label">Task Type</label>
+                        <select class="form-select" id="task_type" name="task_type">
+                            {% for task_type in task_types %}
+                                <option value="{{ task_type }}">{{ task_type.replace('_', ' ').title() }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="user_id" class="form-label">User ID</label>
+                        <input type="text" class="form-control" id="user_id" name="user_id" 
+                               value="web_user" placeholder="Enter user identifier">
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input class="form-check-input" type="checkbox" id="require_consensus" name="require_consensus">
+                        <label class="form-check-label" for="require_consensus">
+                            Require Consensus
+                        </label>
+                        <div class="form-text">Force consensus even for simple tasks.</div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i data-feather="send" class="me-2"></i>
+                        Process Request
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Advanced Options -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i data-feather="settings" class="me-2"></i>
+                    Advanced Options
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="mb-3">
+                            <label for="temperature" class="form-label">Temperature</label>
+                            <input type="range" class="form-range" id="temperature" min="0" max="1" step="0.1" value="0.7">
+                            <div class="form-text">
+                                Creativity: <span id="temperature-value">0.7</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="mb-3">
+                            <label for="max_tokens" class="form-label">Max Tokens</label>
+                            <input type="number" class="form-control" id="max_tokens" min="1" max="8000" value="2000">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="system_prompt" class="form-label">System Prompt</label>
+                    <textarea class="form-control" id="system_prompt" rows="2" 
+                              placeholder="Optional system instructions..."></textarea>
+                </div>
+                
+                <button type="button" class="btn btn-outline-primary btn-sm w-100" onclick="sendAdvancedRequest()">
+                    <i data-feather="zap" class="me-1"></i>
+                    Send Advanced Request
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Results and Status -->
+    <div class="col-md-6">
+        <!-- Provider Status -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i data-feather="server" class="me-2"></i>
+                    Available Providers
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if providers %}
+                    {% for provider in providers %}
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="badge bg-success me-2"></div>
+                            <span class="text-capitalize">{{ provider }}</span>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-warning">
+                        <i data-feather="alert-triangle" class="me-1"></i>
+                        No providers configured
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Results -->
+        {% if result %}
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                    <i data-feather="check-circle" class="me-2 text-success"></i>
+                    Response
+                </h6>
+                <small class="text-muted">
+                    {{ result.metadata.get('processing_time_ms', 0)|round(2) }}ms
+                </small>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6>Generated Response:</h6>
+                    <div class="p-3 bg-dark rounded">
+                        <pre class="mb-0 text-light">{{ result.response }}</pre>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-6">
+                        <small class="text-muted">
+                            <strong>Providers:</strong> {{ result.metadata.get('providers_used', [])|join(', ') }}
+                        </small>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">
+                            <strong>Complexity:</strong> {{ result.metadata.get('task_complexity', 'unknown')|title }}
+                        </small>
+                    </div>
+                </div>
+                
+                {% if result.metadata.get('consensus_confidence') %}
+                <div class="mt-2">
+                    <small class="text-muted">
+                        <strong>Consensus Confidence:</strong> 
+                        {{ (result.metadata.consensus_confidence * 100)|round(1) }}%
+                    </small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-body text-center text-muted">
+                <i data-feather="message-square" class="display-4 mb-3"></i>
+                <h6>No Results Yet</h6>
+                <p>Submit a request to see the AI response here.</p>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Recent Activity -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i data-feather="clock" class="me-2"></i>
+                    Recent Activity
+                </h6>
+            </div>
+            <div class="card-body">
+                <div id="recent-activity">
+                    <div class="text-center py-2">
+                        <button class="btn btn-outline-secondary btn-sm" onclick="loadRecentActivity()">
+                            <i data-feather="refresh-cw" class="me-1"></i>
+                            Load Recent Activity
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Update temperature display
+document.getElementById('temperature').addEventListener('input', function() {
+    document.getElementById('temperature-value').textContent = this.value;
+});
+
+// Send advanced request via API
+async function sendAdvancedRequest() {
+    const prompt = document.getElementById('prompt').value.trim();
+    if (!prompt) {
+        alert('Please enter a prompt');
+        return;
+    }
+    
+    const requestData = {
+        prompt: prompt,
+        task_type: document.getElementById('task_type').value,
+        user_id: document.getElementById('user_id').value,
+        require_consensus: document.getElementById('require_consensus').checked,
+        temperature: parseFloat(document.getElementById('temperature').value),
+        max_tokens: parseInt(document.getElementById('max_tokens').value),
+        system_prompt: document.getElementById('system_prompt').value.trim() || null
+    };
+    
+    try {
+        const response = await fetch('/api/process', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            displayResult(result);
+        } else {
+            alert('Error: ' + result.error);
+        }
+    } catch (error) {
+        alert('Request failed: ' + error.message);
+    }
+}
+
+// Display API result
+function displayResult(result) {
+    const resultHtml = `
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                    <i data-feather="check-circle" class="me-2 text-success"></i>
+                    API Response
+                </h6>
+                <small class="text-muted">
+                    ${Math.round(result.metadata.processing_time_ms * 100) / 100}ms
+                </small>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6>Generated Response:</h6>
+                    <div class="p-3 bg-dark rounded">
+                        <pre class="mb-0 text-light">${result.response}</pre>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-6">
+                        <small class="text-muted">
+                            <strong>Providers:</strong> ${result.metadata.providers_used.join(', ')}
+                        </small>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">
+                            <strong>Complexity:</strong> ${result.metadata.task_complexity}
+                        </small>
+                    </div>
+                </div>
+                
+                ${result.metadata.consensus_confidence ? `
+                <div class="mt-2">
+                    <small class="text-muted">
+                        <strong>Consensus Confidence:</strong> 
+                        ${Math.round(result.metadata.consensus_confidence * 100 * 10) / 10}%
+                    </small>
+                </div>
+                ` : ''}
+            </div>
+        </div>
+    `;
+    
+    // Replace the existing result area or add after the recent activity card
+    const existingResult = document.querySelector('.col-md-6 .card');
+    if (existingResult) {
+        existingResult.outerHTML = resultHtml;
+    }
+    
+    // Re-initialize feather icons
+    feather.replace();
+}
+
+// Load recent activity
+async function loadRecentActivity() {
+    const userId = document.getElementById('user_id').value;
+    
+    try {
+        const response = await fetch(`/api/history/${userId}?limit=5`);
+        const result = await response.json();
+        
+        if (result.success && result.history.length > 0) {
+            const activityHtml = result.history.map(item => `
+                <div class="border-bottom pb-2 mb-2">
+                    <div class="d-flex justify-content-between">
+                        <small class="text-muted">${item.task_type}</small>
+                        <small class="text-muted">${new Date(item.created_at).toLocaleString()}</small>
+                    </div>
+                    <div class="text-truncate" style="max-width: 300px;">
+                        ${item.prompt}
+                    </div>
+                </div>
+            `).join('');
+            
+            document.getElementById('recent-activity').innerHTML = activityHtml;
+        } else {
+            document.getElementById('recent-activity').innerHTML = '<p class="text-muted text-center">No recent activity</p>';
+        }
+    } catch (error) {
+        document.getElementById('recent-activity').innerHTML = '<p class="text-danger text-center">Failed to load activity</p>';
+    }
+}
+</script>
+{% endblock %}

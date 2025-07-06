@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+
+{% block title %}Advanced Features - AI Framework{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">
+        <i class="fas fa-rocket text-primary"></i>
+        Advanced AI Framework Features
+    </h1>
+
+    {% if error %}
+    <div class="alert alert-danger">
+        <i class="fas fa-exclamation-triangle"></i> Error loading features: {{ error }}
+    </div>
+    {% endif %}
+
+    {% if features_data %}
+    <!-- Model Performance Optimization -->
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h3 class="mb-0">
+                <i class="fas fa-chart-line"></i> Model Performance Optimization
+            </h3>
+        </div>
+        <div class="card-body">
+            <p class="lead">Continuously learns from performance data to optimize model routing decisions.</p>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Performance Scores by Provider</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Provider</th>
+                                    <th>Task Type</th>
+                                    <th>Score</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for provider, tasks in features_data.optimization.performance_scores.items() %}
+                                    {% for task, score in tasks.items() %}
+                                    <tr>
+                                        <td><span class="badge bg-secondary">{{ provider }}</span></td>
+                                        <td>{{ task }}</td>
+                                        <td>
+                                            <div class="progress" style="height: 20px;">
+                                                <div class="progress-bar {% if score > 0.8 %}bg-success{% elif score > 0.6 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                     role="progressbar" 
+                                                     style="width: {{ (score * 100)|int }}%">
+                                                    {{ "%.2f"|format(score) }}
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h5>Pattern Analysis</h5>
+                    {% if features_data.optimization.pattern_analysis.suggestions %}
+                    <div class="alert alert-info">
+                        <h6>Optimization Suggestions:</h6>
+                        <ul class="mb-0">
+                            {% for suggestion in features_data.optimization.pattern_analysis.suggestions %}
+                            <li>{{ suggestion }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mt-3">
+                        <h6>Adaptive Router Settings</h6>
+                        <p>Exploration Rate: <strong>{{ "%.2f"|format(features_data.optimization.exploration_rate) }}</strong></p>
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar bg-primary" role="progressbar" 
+                                 style="width: {{ (features_data.optimization.exploration_rate * 100)|int }}%">
+                                {{ (features_data.optimization.exploration_rate * 100)|int }}% Exploration
+                            </div>
+                            <div class="progress-bar bg-success" role="progressbar" 
+                                 style="width: {{ ((1 - features_data.optimization.exploration_rate) * 100)|int }}%">
+                                {{ ((1 - features_data.optimization.exploration_rate) * 100)|int }}% Exploitation
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Advanced Consensus Mechanisms -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h3 class="mb-0">
+                <i class="fas fa-handshake"></i> Advanced Consensus Mechanisms
+            </h3>
+        </div>
+        <div class="card-body">
+            <p class="lead">Sophisticated consensus strategies with weighted voting and confidence scoring.</p>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Available Consensus Strategies</h5>
+                    <ul class="list-group">
+                        {% for strategy in features_data.consensus.strategies %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ strategy|title }}
+                            {% if strategy == features_data.consensus.default_strategy %}
+                            <span class="badge bg-primary">Default</span>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    
+                    <div class="mt-3">
+                        <p>Confidence Threshold: <strong>{{ features_data.consensus.confidence_threshold }}</strong></p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h5>How It Works</h5>
+                    <div class="accordion" id="consensusAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#similarity">
+                                    Similarity Consensus
+                                </button>
+                            </h2>
+                            <div id="similarity" class="accordion-collapse collapse show" data-bs-parent="#consensusAccordion">
+                                <div class="accordion-body">
+                                    Uses semantic similarity to group responses and select the most representative answer.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#voting">
+                                    Voting Consensus
+                                </button>
+                            </h2>
+                            <div id="voting" class="accordion-collapse collapse" data-bs-parent="#consensusAccordion">
+                                <div class="accordion-body">
+                                    Groups similar responses and selects based on weighted voting with confidence scores.
+                                </div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#confidence">
+                                    Confidence Consensus
+                                </button>
+                            </h2>
+                            <div id="confidence" class="accordion-collapse collapse" data-bs-parent="#consensusAccordion">
+                                <div class="accordion-body">
+                                    Advanced strategy considering quality, consistency, and provider reliability for complex tasks.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Context Memory System -->
+    <div class="card mb-4">
+        <div class="card-header bg-warning text-dark">
+            <h3 class="mb-0">
+                <i class="fas fa-brain"></i> Context Memory System
+            </h3>
+        </div>
+        <div class="card-body">
+            <p class="lead">Enhances responses by leveraging conversation history and user preferences.</p>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Context Statistics</h5>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <h4>{{ features_data.context_memory.conversation_count }}</h4>
+                            <p>Total Conversations</p>
+                        </div>
+                    </div>
+                    
+                    {% if features_data.context_memory.context_patterns %}
+                    <h5 class="mt-3">Detected Patterns</h5>
+                    <ul class="list-unstyled">
+                        {% for key, value in features_data.context_memory.context_patterns.items() %}
+                        <li><strong>{{ key|title }}:</strong> {{ value }}</li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <h5>How Context Enhances Responses</h5>
+                    <div class="alert alert-light">
+                        <h6>Context-Aware Features:</h6>
+                        <ul>
+                            <li>Remembers user preferences and communication style</li>
+                            <li>References relevant past conversations</li>
+                            <li>Adapts routing based on historical success</li>
+                            <li>Provides personalized responses</li>
+                        </ul>
+                    </div>
+                    
+                    {% if features_data.context_memory.user_preferences %}
+                    <h6>Sample User Preferences</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            {% for user, prefs in features_data.context_memory.user_preferences.items() %}
+                            <tr>
+                                <th>{{ user }}</th>
+                                <td>{{ prefs }}</td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Advanced Features -->
+    <div class="card">
+        <div class="card-header bg-dark text-white">
+            <h3 class="mb-0">
+                <i class="fas fa-flask"></i> Test Advanced Features
+            </h3>
+        </div>
+        <div class="card-body">
+            <p>Try the enhanced framework with these features enabled:</p>
+            <a href="{{ url_for('api.test_framework') }}" class="btn btn-primary">
+                <i class="fas fa-play"></i> Go to Test Framework
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 0.5rem;
+}
+
+.stat-item h4 {
+    margin: 0;
+    color: #007bff;
+}
+
+.stat-item p {
+    margin: 0;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Updates & Batch Processing - AI Orchestration Framework</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('api.dashboard') }}">AI Orchestration Framework</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('api.dashboard') }}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('api.test_framework') }}">Test</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('api.performance') }}">Performance</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('api.realtime_demo') }}">Real-time Demo</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <h1 class="mb-4">Real-time Updates & Batch Processing</h1>
+        
+        <!-- WebSocket Connection Status -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Connection Status</h5>
+                        <div id="connection-status" class="alert alert-secondary">
+                            <i data-feather="loader" class="me-2"></i>
+                            Connecting to server...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Real-time Processing Demo -->
+        <div class="row mb-4">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Real-time Request Processing</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="realtime-form">
+                            <div class="mb-3">
+                                <label for="realtime-prompt" class="form-label">Prompt</label>
+                                <textarea class="form-control" id="realtime-prompt" rows="3" required>Explain quantum computing in simple terms</textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="realtime-task-type" class="form-label">Task Type</label>
+                                <select class="form-control" id="realtime-task-type">
+                                    <option value="general">General</option>
+                                    <option value="analysis">Analysis</option>
+                                    <option value="creative">Creative</option>
+                                    <option value="factual">Factual</option>
+                                </select>
+                            </div>
+                            <div class="form-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="realtime-consensus">
+                                <label class="form-check-label" for="realtime-consensus">
+                                    Require Consensus
+                                </label>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i data-feather="send" class="me-2"></i>Process with Real-time Updates
+                            </button>
+                        </form>
+                        
+                        <!-- Processing Stages -->
+                        <div id="processing-stages" class="mt-4" style="display: none;">
+                            <h6>Processing Stages:</h6>
+                            <div class="list-group" id="stages-list">
+                                <!-- Stages will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Real-time Response</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="realtime-response" class="text-muted">
+                            <em>Response will appear here...</em>
+                        </div>
+                        <div id="realtime-metadata" class="mt-3" style="display: none;">
+                            <h6>Metadata:</h6>
+                            <pre class="bg-light p-2 rounded" id="metadata-content"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Batch Processing Demo -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Batch Processing</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <form id="batch-form">
+                                    <div class="mb-3">
+                                        <label class="form-label">Batch Requests</label>
+                                        <div id="batch-requests">
+                                            <div class="batch-request mb-2">
+                                                <input type="text" class="form-control" placeholder="Enter prompt 1" value="What is artificial intelligence?">
+                                            </div>
+                                            <div class="batch-request mb-2">
+                                                <input type="text" class="form-control" placeholder="Enter prompt 2" value="Explain machine learning">
+                                            </div>
+                                            <div class="batch-request mb-2">
+                                                <input type="text" class="form-control" placeholder="Enter prompt 3" value="What are neural networks?">
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-secondary" onclick="addBatchRequest()">
+                                            <i data-feather="plus" class="me-1"></i>Add Request
+                                        </button>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i data-feather="layers" class="me-2"></i>Process Batch
+                                    </button>
+                                </form>
+                                
+                                <!-- Batch Progress -->
+                                <div id="batch-progress" class="mt-4" style="display: none;">
+                                    <h6>Batch Progress:</h6>
+                                    <div class="progress mb-2">
+                                        <div id="batch-progress-bar" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                    </div>
+                                    <p class="text-muted mb-0">
+                                        <span id="batch-completed">0</span> / <span id="batch-total">0</span> completed
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <h6>Batch Results:</h6>
+                                <div id="batch-results" class="overflow-auto" style="max-height: 400px;">
+                                    <div class="text-muted">
+                                        <em>Results will appear here...</em>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Metrics -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Live Performance Metrics</h5>
+                        <button class="btn btn-sm btn-secondary float-end" onclick="toggleMetricsSubscription()">
+                            <i data-feather="activity" class="me-1"></i>
+                            <span id="metrics-toggle-text">Subscribe to Updates</span>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div id="live-metrics" class="row text-center">
+                            <div class="col-md-3">
+                                <h6>Total Requests</h6>
+                                <h4 id="metric-total-requests">-</h4>
+                            </div>
+                            <div class="col-md-3">
+                                <h6>Success Rate</h6>
+                                <h4 id="metric-success-rate">-</h4>
+                            </div>
+                            <div class="col-md-3">
+                                <h6>Avg Latency</h6>
+                                <h4 id="metric-avg-latency">-</h4>
+                            </div>
+                            <div class="col-md-3">
+                                <h6>Active Providers</h6>
+                                <h4 id="metric-active-providers">-</h4>
+                            </div>
+                        </div>
+                        <p class="text-muted mt-3 mb-0">
+                            <small>Last updated: <span id="metrics-last-updated">Never</span></small>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script>
+        // Initialize Socket.IO connection
+        const socket = io();
+        let metricsSubscribed = false;
+        
+        // Connection event handlers
+        socket.on('connect', () => {
+            updateConnectionStatus('Connected', 'success');
+            console.log('WebSocket connected');
+        });
+        
+        socket.on('disconnect', () => {
+            updateConnectionStatus('Disconnected', 'danger');
+            console.log('WebSocket disconnected');
+        });
+        
+        socket.on('connection_established', (data) => {
+            console.log('Connection established:', data);
+        });
+        
+        // Real-time processing handlers
+        socket.on('processing_started', (data) => {
+            console.log('Processing started:', data);
+            showProcessingStages();
+            addStage('started', 'Processing started', 'primary');
+        });
+        
+        socket.on('stage_update', (data) => {
+            console.log('Stage update:', data);
+            addStage(data.stage, data.message, 'info');
+        });
+        
+        socket.on('processing_completed', (data) => {
+            console.log('Processing completed:', data);
+            addStage('completed', 'Processing completed', 'success');
+            displayRealtimeResponse(data.response, data.metadata);
+        });
+        
+        socket.on('error', (data) => {
+            console.error('Error:', data);
+            addStage('error', `Error: ${data.message}`, 'danger');
+        });
+        
+        // Batch processing handlers
+        socket.on('batch_started', (data) => {
+            console.log('Batch started:', data);
+            showBatchProgress(data.total_requests);
+        });
+        
+        socket.on('batch_progress', (data) => {
+            updateBatchProgress(data.completed, data.total, data.percentage);
+        });
+        
+        socket.on('batch_item_completed', (data) => {
+            addBatchResult(data.index, data.response, false);
+        });
+        
+        socket.on('batch_item_error', (data) => {
+            addBatchResult(data.index, data.error, true);
+        });
+        
+        socket.on('batch_completed', (data) => {
+            console.log('Batch completed:', data);
+            document.getElementById('batch-progress').querySelector('p').innerHTML += 
+                ` - <span class="text-success">${data.successful} successful</span>, <span class="text-danger">${data.failed} failed</span>`;
+        });
+        
+        // Metrics handlers
+        socket.on('metrics_update', (data) => {
+            updateLiveMetrics(data.metrics);
+            document.getElementById('metrics-last-updated').textContent = new Date().toLocaleTimeString();
+        });
+        
+        // Form submissions
+        document.getElementById('realtime-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const prompt = document.getElementById('realtime-prompt').value;
+            const taskType = document.getElementById('realtime-task-type').value;
+            const requireConsensus = document.getElementById('realtime-consensus').checked;
+            
+            // Clear previous results
+            document.getElementById('realtime-response').innerHTML = '<em>Processing...</em>';
+            document.getElementById('realtime-metadata').style.display = 'none';
+            document.getElementById('stages-list').innerHTML = '';
+            
+            // Emit request
+            socket.emit('process_request', {
+                prompt: prompt,
+                task_type: taskType,
+                require_consensus: requireConsensus,
+                user_id: 'demo_user'
+            });
+        });
+        
+        document.getElementById('batch-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const requests = [];
+            document.querySelectorAll('#batch-requests input').forEach((input, index) => {
+                if (input.value.trim()) {
+                    requests.push({
+                        prompt: input.value.trim(),
+                        task_type: 'general'
+                    });
+                }
+            });
+            
+            if (requests.length === 0) {
+                alert('Please enter at least one request');
+                return;
+            }
+            
+            // Clear previous results
+            document.getElementById('batch-results').innerHTML = '<div class="text-muted"><em>Processing...</em></div>';
+            
+            // Emit batch request
+            socket.emit('batch_process', {
+                requests: requests,
+                user_id: 'demo_user'
+            });
+        });
+        
+        // Helper functions
+        function updateConnectionStatus(status, type) {
+            const statusEl = document.getElementById('connection-status');
+            statusEl.className = `alert alert-${type}`;
+            statusEl.innerHTML = `<i data-feather="${type === 'success' ? 'check-circle' : 'x-circle'}" class="me-2"></i>${status}`;
+            feather.replace();
+        }
+        
+        function showProcessingStages() {
+            document.getElementById('processing-stages').style.display = 'block';
+        }
+        
+        function addStage(stage, message, type) {
+            const stagesList = document.getElementById('stages-list');
+            const stageEl = document.createElement('div');
+            stageEl.className = `list-group-item list-group-item-${type}`;
+            stageEl.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>${message}</span>
+                    <small>${new Date().toLocaleTimeString()}</small>
+                </div>
+            `;
+            stagesList.appendChild(stageEl);
+        }
+        
+        function displayRealtimeResponse(response, metadata) {
+            document.getElementById('realtime-response').textContent = response;
+            
+            if (metadata) {
+                document.getElementById('realtime-metadata').style.display = 'block';
+                document.getElementById('metadata-content').textContent = JSON.stringify(metadata, null, 2);
+            }
+        }
+        
+        function addBatchRequest() {
+            const container = document.getElementById('batch-requests');
+            const div = document.createElement('div');
+            div.className = 'batch-request mb-2';
+            div.innerHTML = `<input type="text" class="form-control" placeholder="Enter prompt ${container.children.length + 1}">`;
+            container.appendChild(div);
+        }
+        
+        function showBatchProgress(total) {
+            document.getElementById('batch-progress').style.display = 'block';
+            document.getElementById('batch-total').textContent = total;
+            document.getElementById('batch-completed').textContent = '0';
+            document.getElementById('batch-progress-bar').style.width = '0%';
+            document.getElementById('batch-results').innerHTML = '';
+        }
+        
+        function updateBatchProgress(completed, total, percentage) {
+            document.getElementById('batch-completed').textContent = completed;
+            document.getElementById('batch-progress-bar').style.width = percentage + '%';
+        }
+        
+        function addBatchResult(index, content, isError) {
+            const resultsContainer = document.getElementById('batch-results');
+            const resultEl = document.createElement('div');
+            resultEl.className = `alert ${isError ? 'alert-danger' : 'alert-success'} mb-2`;
+            resultEl.innerHTML = `
+                <strong>Request ${index + 1}:</strong><br>
+                ${isError ? 'Error: ' : ''}${content}
+            `;
+            resultsContainer.appendChild(resultEl);
+        }
+        
+        function toggleMetricsSubscription() {
+            if (metricsSubscribed) {
+                // Unsubscribe logic would go here
+                metricsSubscribed = false;
+                document.getElementById('metrics-toggle-text').textContent = 'Subscribe to Updates';
+            } else {
+                socket.emit('subscribe_metrics', { interval: 5 });
+                metricsSubscribed = true;
+                document.getElementById('metrics-toggle-text').textContent = 'Unsubscribe';
+            }
+        }
+        
+        function updateLiveMetrics(metrics) {
+            document.getElementById('metric-total-requests').textContent = metrics.total_requests || '-';
+            document.getElementById('metric-success-rate').textContent = 
+                metrics.success_rate ? (metrics.success_rate * 100).toFixed(1) + '%' : '-';
+            document.getElementById('metric-avg-latency').textContent = 
+                metrics.avg_latency_ms ? Math.round(metrics.avg_latency_ms) + 'ms' : '-';
+            document.getElementById('metric-active-providers').textContent = 
+                metrics.provider_metrics ? Object.keys(metrics.provider_metrics).length : '-';
+        }
+        
+        // Initialize Feather icons
+        feather.replace();
+    </script>
+</body>
+</html>

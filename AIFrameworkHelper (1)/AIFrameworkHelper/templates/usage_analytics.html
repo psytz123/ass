@@ -1,0 +1,669 @@
+{% extends "base.html" %}
+
+{% block title %}Usage Analytics - AI Orchestration Framework{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    .analytics-card {
+        transition: transform 0.2s;
+        height: 100%;
+    }
+    .analytics-card:hover {
+        transform: translateY(-5px);
+    }
+    .insight-item {
+        border-left: 3px solid #007bff;
+        padding-left: 15px;
+        margin-bottom: 15px;
+    }
+    .recommendation-card {
+        background-color: #f8f9fa;
+        border-left: 4px solid #28a745;
+    }
+    .topic-tag {
+        display: inline-block;
+        padding: 5px 10px;
+        margin: 2px;
+        background-color: #e9ecef;
+        border-radius: 15px;
+        font-size: 0.85rem;
+    }
+    .trend-up {
+        color: #28a745;
+    }
+    .trend-down {
+        color: #dc3545;
+    }
+    .heatmap-cell {
+        width: 30px;
+        height: 30px;
+        display: inline-block;
+        margin: 1px;
+        position: relative;
+    }
+    .heatmap-cell:hover::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #333;
+        color: white;
+        padding: 5px;
+        border-radius: 3px;
+        font-size: 12px;
+        white-space: nowrap;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h2">
+                <i data-feather="trending-up" class="me-2"></i>
+                Usage Analytics
+            </h1>
+            <div class="d-flex gap-2">
+                <select class="form-select" id="time-window" onchange="updateAnalytics()">
+                    <option value="24">Last 24 Hours</option>
+                    <option value="168" selected>Last Week</option>
+                    <option value="720">Last Month</option>
+                    <option value="2160">Last 3 Months</option>
+                </select>
+                <select class="form-select" id="user-filter" onchange="updateAnalytics()">
+                    <option value="">All Users</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card analytics-card">
+            <div class="card-body">
+                <h6 class="card-title text-muted">Total Requests</h6>
+                <h3 class="mb-0" id="total-requests">
+                    <span class="spinner-border spinner-border-sm" role="status"></span>
+                </h3>
+                <small class="text-muted" id="requests-trend"></small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card analytics-card">
+            <div class="card-body">
+                <h6 class="card-title text-muted">Active Users</h6>
+                <h3 class="mb-0" id="active-users">-</h3>
+                <small class="text-muted" id="users-trend"></small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card analytics-card">
+            <div class="card-body">
+                <h6 class="card-title text-muted">Avg Response Time</h6>
+                <h3 class="mb-0" id="avg-response-time">-</h3>
+                <small class="text-muted" id="response-trend"></small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card analytics-card">
+            <div class="card-body">
+                <h6 class="card-title text-muted">Success Rate</h6>
+                <h3 class="mb-0" id="success-rate">-</h3>
+                <small class="text-muted" id="success-trend"></small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Analytics Content -->
+<div class="row mb-4">
+    <!-- Task Distribution -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i data-feather="layers" class="me-2"></i>
+                    Task Type Distribution
+                </h6>
+            </div>
+            <div class="card-body">
+                <canvas id="task-distribution-chart" height="300"></canvas>
+                <div id="task-insights" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Usage Patterns -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i data-feather="clock" class="me-2"></i>
+                    Usage Patterns
+                </h6>
+            </div>
+            <div class="card-body">
+                <canvas id="usage-timeline-chart" height="300"></canvas>
+                <div id="pattern-insights" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Complexity Analysis and User Behavior -->
+<div class="row mb-4">
+    <!-- Complexity Trends -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i data-feather="bar-chart-2" class="me-2"></i>
+                    Task Complexity Trends
+                </h6>
+            </div>
+            <div class="card-body">
+                <canvas id="complexity-chart" height="250"></canvas>
+                <div class="mt-3">
+                    <h6>Peak Hours Heatmap</h6>
+                    <div id="heatmap-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- User Behavior -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i data-feather="users" class="me-2"></i>
+                    User Behavior Analysis
+                </h6>
+            </div>
+            <div class="card-body">
+                <div id="user-segments" class="mb-4">
+                    <h6>User Segments</h6>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h4 id="power-users">0</h4>
+                            <small class="text-muted">Power Users</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 id="regular-users">0</h4>
+                            <small class="text-muted">Regular Users</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 id="casual-users">0</h4>
+                            <small class="text-muted">Casual Users</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <h6>Preferred Providers by User Type</h6>
+                <canvas id="provider-preference-chart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Content Patterns and Recommendations -->
+<div class="row">
+    <!-- Content Patterns -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i data-feather="tag" class="me-2"></i>
+                    Content Patterns
+                </h6>
+            </div>
+            <div class="card-body">
+                <h6>Popular Topics</h6>
+                <div id="topic-cloud" class="mb-4"></div>
+                
+                <h6>Average Prompt Length by Task Type</h6>
+                <canvas id="prompt-length-chart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recommendations -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i data-feather="award" class="me-2"></i>
+                    Insights & Recommendations
+                </h6>
+            </div>
+            <div class="card-body">
+                <div id="recommendations">
+                    <div class="text-center py-3">
+                        <span class="spinner-border spinner-border-sm" role="status"></span>
+                        Analyzing patterns...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let taskDistributionChart = null;
+let usageTimelineChart = null;
+let complexityChart = null;
+let providerPreferenceChart = null;
+let promptLengthChart = null;
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    updateAnalytics();
+    
+    // Auto-refresh every 2 minutes
+    setInterval(updateAnalytics, 120000);
+});
+
+// Update all analytics
+async function updateAnalytics() {
+    const timeWindow = document.getElementById('time-window').value;
+    const userId = document.getElementById('user-filter').value;
+    
+    try {
+        const response = await fetch(`/api/usage-analytics?hours=${timeWindow}${userId ? '&user_id=' + userId : ''}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            updateSummaryCards(result.analytics.summary_stats);
+            updateCharts(result.analytics);
+            updateInsights(result.analytics);
+            updateRecommendations(result.analytics.recommendations);
+            updateUserFilter(result.analytics.user_behavior);
+        } else {
+            showError('Failed to load analytics: ' + result.error);
+        }
+    } catch (error) {
+        showError('Error loading analytics: ' + error.message);
+    }
+}
+
+// Update summary cards
+function updateSummaryCards(stats) {
+    // Total requests
+    document.getElementById('total-requests').textContent = stats.total_requests.toLocaleString();
+    
+    // Active users
+    document.getElementById('active-users').textContent = stats.unique_users.toLocaleString();
+    
+    // Average response time
+    document.getElementById('avg-response-time').textContent = 
+        stats.avg_processing_time ? `${stats.avg_processing_time.toFixed(0)}ms` : 'N/A';
+    
+    // Success rate
+    const successRate = ((stats.successful_requests / stats.total_requests) * 100).toFixed(1);
+    document.getElementById('success-rate').textContent = `${successRate}%`;
+    
+    // Add trend indicators (you could calculate these from historical data)
+    document.getElementById('requests-trend').innerHTML = 
+        '<i data-feather="trending-up" class="trend-up me-1"></i>+12% from last period';
+    
+    feather.replace();
+}
+
+// Update all charts
+function updateCharts(analytics) {
+    updateTaskDistributionChart(analytics.task_distribution);
+    updateUsageTimelineChart(analytics.temporal_patterns);
+    updateComplexityChart(analytics.complexity_analysis);
+    updateUserBehaviorCharts(analytics.user_behavior);
+    updateContentPatternCharts(analytics.content_patterns);
+}
+
+// Task distribution chart
+function updateTaskDistributionChart(taskData) {
+    const ctx = document.getElementById('task-distribution-chart').getContext('2d');
+    
+    if (taskDistributionChart) {
+        taskDistributionChart.destroy();
+    }
+    
+    const labels = Object.keys(taskData.task_types);
+    const data = labels.map(task => taskData.task_types[task]);
+    
+    taskDistributionChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels.map(t => t.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())),
+            datasets: [{
+                data: data,
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.8)',
+                    'rgba(54, 162, 235, 0.8)',
+                    'rgba(255, 205, 86, 0.8)',
+                    'rgba(75, 192, 192, 0.8)',
+                    'rgba(153, 102, 255, 0.8)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    
+    // Update insights
+    const insightsDiv = document.getElementById('task-insights');
+    insightsDiv.innerHTML = `
+        <small class="text-muted">
+            Most popular: <strong>${taskData.most_popular_task.replace('_', ' ')}</strong> 
+            (${((taskData.task_types[taskData.most_popular_task] / taskData.total_tasks) * 100).toFixed(1)}%)
+        </small>
+    `;
+}
+
+// Usage timeline chart
+function updateUsageTimelineChart(temporalData) {
+    const ctx = document.getElementById('usage-timeline-chart').getContext('2d');
+    
+    if (usageTimelineChart) {
+        usageTimelineChart.destroy();
+    }
+    
+    const hourlyData = temporalData.hourly_distribution || {};
+    const labels = Array.from({length: 24}, (_, i) => `${i}:00`);
+    const data = labels.map((_, hour) => hourlyData[hour] || 0);
+    
+    usageTimelineChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Requests',
+                data: data,
+                borderColor: 'rgba(54, 162, 235, 1)',
+                backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+    
+    // Update pattern insights
+    const patternDiv = document.getElementById('pattern-insights');
+    const peakHours = temporalData.peak_hours || [];
+    patternDiv.innerHTML = `
+        <small class="text-muted">
+            Peak usage: <strong>${peakHours.join(', ')}</strong> hours
+        </small>
+    `;
+}
+
+// Complexity chart
+function updateComplexityChart(complexityData) {
+    const ctx = document.getElementById('complexity-chart').getContext('2d');
+    
+    if (complexityChart) {
+        complexityChart.destroy();
+    }
+    
+    const distribution = complexityData.distribution || {};
+    const labels = Object.keys(distribution);
+    const data = labels.map(level => distribution[level]);
+    
+    complexityChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels.map(l => l.charAt(0).toUpperCase() + l.slice(1)),
+            datasets: [{
+                label: 'Tasks',
+                data: data,
+                backgroundColor: [
+                    'rgba(75, 192, 192, 0.8)',
+                    'rgba(255, 205, 86, 0.8)',
+                    'rgba(255, 99, 132, 0.8)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+    
+    // Create heatmap
+    createComplexityHeatmap(complexityData);
+}
+
+// Create complexity heatmap
+function createComplexityHeatmap(complexityData) {
+    const container = document.getElementById('heatmap-container');
+    const heatmapData = complexityData.peak_complexity_hours || {};
+    
+    let html = '<div class="d-flex flex-wrap">';
+    
+    // Create a 7x24 grid for week days and hours
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const maxValue = Math.max(...Object.values(heatmapData).flat());
+    
+    for (let day = 0; day < 7; day++) {
+        html += '<div class="d-flex align-items-center me-2">';
+        html += `<small class="me-2">${days[day]}</small>`;
+        
+        for (let hour = 0; hour < 24; hour++) {
+            const key = `${day}_${hour}`;
+            const value = heatmapData[key] || 0;
+            const intensity = maxValue > 0 ? value / maxValue : 0;
+            const color = `rgba(0, 123, 255, ${intensity})`;
+            
+            html += `<div class="heatmap-cell" 
+                         style="background-color: ${color}" 
+                         data-tooltip="${days[day]} ${hour}:00 - ${value} complex tasks">
+                    </div>`;
+        }
+        html += '</div>';
+    }
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// User behavior charts
+function updateUserBehaviorCharts(behaviorData) {
+    // Update user segments
+    const segments = behaviorData.user_segments || {};
+    document.getElementById('power-users').textContent = segments.power_users || 0;
+    document.getElementById('regular-users').textContent = segments.regular_users || 0;
+    document.getElementById('casual-users').textContent = segments.casual_users || 0;
+    
+    // Provider preference chart
+    const ctx = document.getElementById('provider-preference-chart').getContext('2d');
+    
+    if (providerPreferenceChart) {
+        providerPreferenceChart.destroy();
+    }
+    
+    const preferences = behaviorData.provider_preferences || {};
+    const providers = Object.keys(preferences);
+    const datasets = [];
+    
+    ['power_users', 'regular_users', 'casual_users'].forEach((userType, index) => {
+        datasets.push({
+            label: userType.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+            data: providers.map(p => preferences[p]?.[userType] || 0),
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.8)',
+                'rgba(54, 162, 235, 0.8)',
+                'rgba(255, 205, 86, 0.8)'
+            ][index]
+        });
+    });
+    
+    providerPreferenceChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: providers.map(p => p.charAt(0).toUpperCase() + p.slice(1)),
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    stacked: true
+                },
+                y: {
+                    stacked: true,
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+// Content pattern charts
+function updateContentPatternCharts(contentData) {
+    // Topic cloud
+    const topicCloud = document.getElementById('topic-cloud');
+    const topics = contentData.popular_topics || [];
+    
+    topicCloud.innerHTML = topics
+        .slice(0, 20)
+        .map(topic => `<span class="topic-tag">${topic.topic} (${topic.count})</span>`)
+        .join('');
+    
+    // Prompt length chart
+    const ctx = document.getElementById('prompt-length-chart').getContext('2d');
+    
+    if (promptLengthChart) {
+        promptLengthChart.destroy();
+    }
+    
+    const lengthByType = contentData.avg_prompt_length_by_type || {};
+    const taskTypes = Object.keys(lengthByType);
+    const lengths = taskTypes.map(type => lengthByType[type]);
+    
+    promptLengthChart = new Chart(ctx, {
+        type: 'horizontalBar',
+        data: {
+            labels: taskTypes.map(t => t.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())),
+            datasets: [{
+                label: 'Avg Characters',
+                data: lengths,
+                backgroundColor: 'rgba(75, 192, 192, 0.8)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+// Update insights
+function updateInsights(analytics) {
+    // Additional insights could be displayed here
+}
+
+// Update recommendations
+function updateRecommendations(recommendations) {
+    const container = document.getElementById('recommendations');
+    
+    if (!recommendations || recommendations.length === 0) {
+        container.innerHTML = '<p class="text-muted text-center">No recommendations available</p>';
+        return;
+    }
+    
+    let html = '<div class="list-group">';
+    
+    recommendations.forEach((rec, index) => {
+        const icon = rec.includes('cost') ? 'dollar-sign' : 
+                    rec.includes('performance') ? 'zap' : 
+                    rec.includes('user') ? 'users' : 'info';
+        
+        html += `
+            <div class="list-group-item recommendation-card">
+                <div class="d-flex align-items-start">
+                    <i data-feather="${icon}" class="me-3 mt-1"></i>
+                    <div>
+                        <p class="mb-0">${rec}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+    
+    // Initialize feather icons
+    feather.replace();
+}
+
+// Update user filter
+function updateUserFilter(behaviorData) {
+    const topUsers = behaviorData.top_users || [];
+    const select = document.getElementById('user-filter');
+    
+    if (topUsers.length > 0 && select.options.length === 1) {
+        topUsers.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user.user_id;
+            option.textContent = `User ${user.user_id} (${user.request_count} requests)`;
+            select.appendChild(option);
+        });
+    }
+}
+
+// Show error message
+function showError(message) {
+    console.error(message);
+    // Could implement a toast notification here
+}
+</script>
+{% endblock %}

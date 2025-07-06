@@ -1,0 +1,269 @@
+/* Custom CSS for AI Orchestration Framework */
+
+/* Minimal custom styles - leveraging Bootstrap's built-in dark theme */
+
+/* Custom spacing for better visual hierarchy */
+.navbar-brand {
+    font-weight: 600;
+}
+
+/* Code block styling for better readability */
+pre {
+    background-color: var(--bs-dark) !important;
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+    padding: 1rem;
+    overflow-x: auto;
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+/* Progress bar styling for performance metrics */
+.progress {
+    height: 8px;
+    background-color: var(--bs-gray-700);
+}
+
+/* Card hover effects */
+.card {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Status indicator styling */
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.status-active {
+    background-color: var(--bs-success);
+}
+
+.status-inactive {
+    background-color: var(--bs-danger);
+}
+
+.status-warning {
+    background-color: var(--bs-warning);
+}
+
+/* Chart container styling */
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+}
+
+/* Form styling improvements */
+.form-floating label {
+    color: var(--bs-secondary);
+}
+
+/* Loading spinner overlay */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(var(--bs-dark-rgb), 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+/* Response styling */
+.response-container {
+    background-color: var(--bs-gray-900);
+    border: 1px solid var(--bs-border-color);
+    border-radius: var(--bs-border-radius);
+    padding: 1rem;
+    margin: 1rem 0;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-x: auto;
+}
+
+/* Metrics styling */
+.metric-value {
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.metric-label {
+    font-size: 0.875rem;
+    color: var(--bs-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Provider status styling */
+.provider-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-radius: var(--bs-border-radius);
+    transition: background-color 0.2s ease-in-out;
+}
+
+.provider-status:hover {
+    background-color: var(--bs-gray-800);
+}
+
+/* Table styling improvements */
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: var(--bs-light);
+    background-color: var(--bs-gray-800);
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+/* Alert styling */
+.alert {
+    border: none;
+    border-radius: var(--bs-border-radius-lg);
+}
+
+/* Button styling improvements */
+.btn {
+    border-radius: var(--bs-border-radius);
+    font-weight: 500;
+    transition: all 0.15s ease-in-out;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+/* Dashboard specific styling */
+.dashboard-stat {
+    text-align: center;
+    padding: 1.5rem;
+}
+
+.dashboard-stat-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.8;
+}
+
+.dashboard-stat-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.dashboard-stat-label {
+    color: var(--bs-secondary);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .metric-value {
+        font-size: 1.5rem;
+    }
+    
+    .dashboard-stat-value {
+        font-size: 2rem;
+    }
+    
+    .dashboard-stat-icon {
+        font-size: 2.5rem;
+    }
+}
+
+/* Animation for loading states */
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+.loading-pulse {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Consensus confidence styling */
+.confidence-bar {
+    height: 4px;
+    background-color: var(--bs-gray-700);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.confidence-fill {
+    height: 100%;
+    transition: width 0.3s ease-in-out;
+}
+
+/* Error state styling */
+.error-state {
+    color: var(--bs-danger);
+    text-align: center;
+    padding: 2rem;
+}
+
+.empty-state {
+    color: var(--bs-secondary);
+    text-align: center;
+    padding: 2rem;
+}
+
+/* Performance chart styling */
+.performance-chart {
+    background-color: var(--bs-gray-900);
+    border-radius: var(--bs-border-radius);
+    padding: 1rem;
+}
+
+/* Footer styling */
+footer {
+    margin-top: auto;
+    background-color: var(--bs-gray-900);
+}
+
+/* Utility classes */
+.text-monospace {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.border-dashed {
+    border-style: dashed !important;
+}
+
+.shadow-soft {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Focus states for accessibility */
+.btn:focus,
+.form-control:focus,
+.form-select:focus {
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25);
+}

@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - AI Orchestration Framework{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h2">
+                <i data-feather="zap" class="me-2"></i>
+                AI Orchestration Framework
+            </h1>
+            <span class="badge bg-success">Active</span>
+        </div>
+    </div>
+</div>
+
+<!-- Overview Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <i data-feather="layers" class="display-4 text-primary mb-2"></i>
+                <h5 class="card-title">Multi-Model Integration</h5>
+                <p class="card-text text-muted">OpenAI, Anthropic, Google AI & AbacusAI</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <i data-feather="navigation" class="display-4 text-info mb-2"></i>
+                <h5 class="card-title">Smart Routing</h5>
+                <p class="card-text text-muted">Complexity-based task routing</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <i data-feather="users" class="display-4 text-warning mb-2"></i>
+                <h5 class="card-title">Consensus</h5>
+                <p class="card-text text-muted">Multi-response agreement</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <i data-feather="trending-up" class="display-4 text-success mb-2"></i>
+                <h5 class="card-title">Performance</h5>
+                <p class="card-text text-muted">Real-time monitoring</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex align-items-center">
+                <i data-feather="play" class="me-2"></i>
+                <h5 class="mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('api.test_framework') }}" class="btn btn-primary btn-lg w-100">
+                            <i data-feather="play" class="me-2"></i>
+                            Test Framework
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('api.performance') }}" class="btn btn-outline-secondary btn-lg w-100">
+                            <i data-feather="bar-chart-2" class="me-2"></i>
+                            Performance
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('api.costs_dashboard') }}" class="btn btn-outline-secondary btn-lg w-100">
+                            <i data-feather="dollar-sign" class="me-2"></i>
+                            Cost Tracking
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('api.ab_testing_dashboard') }}" class="btn btn-outline-secondary btn-lg w-100">
+                            <i data-feather="activity" class="me-2"></i>
+                            A/B Testing
+                        </a>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('api.usage_analytics_dashboard') }}" class="btn btn-outline-secondary btn-lg w-100">
+                            <i data-feather="trending-up" class="me-2"></i>
+                            Usage Analytics
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('api.realtime_demo') }}" class="btn btn-outline-secondary btn-lg w-100">
+                            <i data-feather="zap" class="me-2"></i>
+                            Real-time Demo
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('api.advanced_features') }}" class="btn btn-outline-secondary btn-lg w-100">
+                            <i data-feather="settings" class="me-2"></i>
+                            Advanced
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <button class="btn btn-outline-secondary btn-lg w-100" onclick="loadProviderStatus()">
+                            <i data-feather="refresh-cw" class="me-2"></i>
+                            Check Status
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Status -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex align-items-center">
+                <i data-feather="server" class="me-2"></i>
+                <h5 class="mb-0">Provider Status</h5>
+            </div>
+            <div class="card-body">
+                <div id="provider-status">
+                    <div class="text-center py-3">
+                        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                        Loading provider status...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex align-items-center">
+                <i data-feather="activity" class="me-2"></i>
+                <h5 class="mb-0">Recent Metrics</h5>
+            </div>
+            <div class="card-body">
+                <div id="recent-metrics">
+                    <div class="text-center py-3">
+                        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                        Loading recent metrics...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Feature Overview -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex align-items-center">
+                <i data-feather="info" class="me-2"></i>
+                <h5 class="mb-0">Framework Features</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i data-feather="cpu" class="me-2"></i>Multi-Model Integration</h6>
+                        <p class="text-muted">Seamlessly integrate multiple AI providers with automatic failover and load balancing.</p>
+                        
+                        <h6><i data-feather="share-2" class="me-2"></i>Intelligent Task Routing</h6>
+                        <p class="text-muted">Automatically route tasks to the most suitable model based on complexity analysis.</p>
+                        
+                        <h6><i data-feather="shield" class="me-2"></i>Consensus Mechanisms</h6>
+                        <p class="text-muted">Find agreement across multiple model responses using similarity and voting algorithms.</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i data-feather="database" class="me-2"></i>Memory & Analytics</h6>
+                        <p class="text-muted">Persistent conversation history and detailed performance tracking.</p>
+                        
+                        <h6><i data-feather="zap" class="me-2"></i>Async Processing</h6>
+                        <p class="text-muted">Parallel model calls for improved performance and responsiveness.</p>
+                        
+                        <h6><i data-feather="settings" class="me-2"></i>Extensible Architecture</h6>
+                        <p class="text-muted">Pluggable consensus algorithms and custom complexity evaluators.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,185 @@
+# AI Orchestration Framework Configuration
+
+# Core Framework Settings
+framework:
+  name: "AI Orchestration Framework"
+  version: "1.0.0"
+  enable_metrics: true
+  enable_caching: true
+  log_level: "INFO"
+
+# Model Provider Configuration
+models:
+  openai:
+    # The newest OpenAI model is "gpt-4o" which was released May 13, 2024.
+    # Do not change this unless explicitly requested by the user
+    default_model: "gpt-4o"
+    max_tokens: 4000
+    temperature: 0.7
+    fallback_models: ["gpt-4", "gpt-3.5-turbo"]
+    
+  anthropic:
+    # The newest Anthropic model is "claude-sonnet-4-20250514", not "claude-3-7-sonnet-20250219", "claude-3-5-sonnet-20241022" nor "claude-3-sonnet-20240229"
+    # If the user doesn't specify a model, always prefer using "claude-sonnet-4-20250514" as it is the latest model
+    default_model: "claude-sonnet-4-20250514"
+    max_tokens: 4000
+    temperature: 0.7
+    fallback_models: ["claude-3-7-sonnet-20250219", "claude-3-5-sonnet-20241022"]
+    
+  google:
+    # Note that the newest Gemini model series is "gemini-2.5-flash" or "gemini-2.5-pro"
+    # Do not change this unless explicitly requested by the user
+    default_model: "gemini-2.5-flash"
+    max_tokens: 4000
+    temperature: 0.7
+    fallback_models: ["gemini-2.5-pro", "gemini-1.5-pro"]
+
+# Task Routing Configuration
+routing:
+  default_strategy: "performance_based"
+  complexity_threshold: 0.7
+  require_consensus_for_complex: true
+  
+  # Routing rules for different task types
+  rules:
+    - task_type: "code_generation"
+      complexity: "simple"
+      preferred_providers: ["openai", "anthropic"]
+      require_consensus: false
+      min_providers: 1
+      
+    - task_type: "code_generation"
+      complexity: "medium"
+      preferred_providers: ["openai", "anthropic", "google"]
+      require_consensus: true
+      min_providers: 2
+    
+    - task_type: "code_generation" 
+      complexity: "complex"
+      preferred_providers: ["openai", "anthropic", "google"]
+      require_consensus: true
+      min_providers: 3
+      
+    - task_type: "code_optimization"
+      complexity: "simple"
+      preferred_providers: ["openai", "anthropic"]
+      require_consensus: false
+      
+    - task_type: "code_optimization"
+      complexity: "complex"
+      preferred_providers: ["openai", "anthropic", "google"]
+      require_consensus: true
+      
+    - task_type: "text_analysis"
+      complexity: "simple"
+      preferred_providers: ["google", "openai"]
+      require_consensus: false
+      
+    - task_type: "creative_writing"
+      complexity: "any"
+      preferred_providers: ["anthropic", "openai"]
+      require_consensus: false
+      
+    - task_type: "question_answering"
+      complexity: "simple"
+      preferred_providers: ["google", "openai"]
+      require_consensus: false
+      
+    - task_type: "question_answering"
+      complexity: "complex"
+      preferred_providers: ["openai", "anthropic", "google"]
+      require_consensus: true
+      
+    - task_type: "summarization"
+      complexity: "any"
+      preferred_providers: ["google", "openai"]
+      require_consensus: false
+      
+    - task_type: "data_analysis"
+      complexity: "complex"
+      preferred_providers: ["openai", "anthropic"]
+      require_consensus: true
+
+# Consensus Configuration
+consensus:
+  default_strategy: "similarity"
+  similarity_threshold: 0.8
+  confidence_threshold: 0.7
+  
+  strategies:
+    similarity:
+      model: "all-MiniLM-L6-v2"
+      threshold: 0.8
+      cache_embeddings: true
+      
+    voting:
+      require_majority: true
+      weight_by_confidence: true
+      min_agreement: 0.6
+      
+    confidence:
+      min_confidence: 0.7
+      weight_threshold: 0.8
+
+# Performance and Analytics Configuration
+analytics:
+  enable_performance_tracking: true
+  enable_conversation_history: true
+  retention_days: 30
+  cleanup_interval_hours: 24
+  
+  metrics:
+    track_latency: true
+    track_token_usage: true
+    track_success_rates: true
+    track_consensus_confidence: true
+
+# Caching Configuration
+caching:
+  enable_embedding_cache: true
+  enable_response_cache: false  # Disabled for dynamic responses
+  cache_ttl_hours: 168  # 1 week
+  max_cache_size_mb: 100
+
+# Rate Limiting Configuration
+rate_limiting:
+  enable: false  # Disabled for MVP
+  requests_per_minute: 60
+  burst_allowance: 10
+
+# Error Handling Configuration
+error_handling:
+  max_retries: 3
+  retry_delay_seconds: 1
+  fallback_enabled: true
+  timeout_seconds: 30
+
+# Logging Configuration  
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  enable_file_logging: false
+  log_file_path: "logs/ai_framework.log"
+  max_log_file_size_mb: 10
+  log_retention_days: 7
+
+# Security Configuration
+security:
+  enable_api_key_validation: true
+  enable_rate_limiting: false  # Disabled for MVP
+  allowed_origins: ["*"]  # Configure for production
+  
+# Database Configuration (overridden by environment variables)
+database:
+  # These are overridden by DATABASE_URL environment variable
+  default_url: "sqlite:///ai_framework.db"
+  pool_size: 5
+  pool_recycle_seconds: 300
+  echo_sql: false
+
+# Development Configuration
+development:
+  debug_mode: true
+  auto_reload: true
+  enable_profiling: false
+  mock_api_calls: false  # Set to true for testing without API keys

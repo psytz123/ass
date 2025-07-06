@@ -1,0 +1,633 @@
+{% extends "base.html" %}
+
+{% block title %}A/B Testing - AI Orchestration Framework{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    .test-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    .test-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+    .test-card.active {
+        border-color: #28a745;
+    }
+    .test-card.completed {
+        border-color: #6c757d;
+    }
+    .winner-badge {
+        animation: glow 2s ease-in-out infinite;
+    }
+    @keyframes glow {
+        0%, 100% { box-shadow: 0 0 5px rgba(40, 167, 69, 0.5); }
+        50% { box-shadow: 0 0 20px rgba(40, 167, 69, 0.8); }
+    }
+    .strategy-option {
+        cursor: pointer;
+        padding: 10px;
+        margin: 5px 0;
+        border: 2px solid transparent;
+        border-radius: 5px;
+        transition: all 0.2s;
+    }
+    .strategy-option:hover {
+        border-color: #007bff;
+        background-color: rgba(0, 123, 255, 0.1);
+    }
+    .strategy-option.selected {
+        border-color: #007bff;
+        background-color: rgba(0, 123, 255, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h2">
+                <i data-feather="activity" class="me-2"></i>
+                A/B Testing
+            </h1>
+            <button class="btn btn-primary" onclick="showCreateTestModal()">
+                <i data-feather="plus" class="me-1"></i>
+                Create New Test
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Active Tests -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h4 class="mb-3">Active Tests</h4>
+        <div id="active-tests" class="row">
+            <div class="col-12 text-center py-5">
+                <span class="spinner-border spinner-border-sm" role="status"></span>
+                Loading active tests...
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Completed Tests -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h4 class="mb-3">Completed Tests</h4>
+        <div id="completed-tests" class="row">
+            <div class="col-12 text-center py-5">
+                <span class="spinner-border spinner-border-sm" role="status"></span>
+                Loading completed tests...
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Test Details Modal -->
+<div class="modal fade" id="testDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="test-details-title">Test Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="test-details-body">
+                <div class="text-center py-5">
+                    <span class="spinner-border spinner-border-sm" role="status"></span>
+                    Loading test details...
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger" id="stop-test-btn" style="display: none;" onclick="stopTest()">
+                    <i data-feather="stop-circle" class="me-1"></i>
+                    Stop Test
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Test Modal -->
+<div class="modal fade" id="createTestModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New A/B Test</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="create-test-form">
+                    <!-- Basic Info -->
+                    <div class="mb-4">
+                        <h6>Test Information</h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="test-name" class="form-label">Test Name</label>
+                                <input type="text" class="form-control" id="test-name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="test-id" class="form-label">Test ID</label>
+                                <input type="text" class="form-control" id="test-id" readonly>
+                                <small class="text-muted">Auto-generated</small>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="test-duration" class="form-label">Duration (hours)</label>
+                                <input type="number" class="form-control" id="test-duration" value="24" min="1">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="min-samples" class="form-label">Min Samples per Group</label>
+                                <input type="number" class="form-control" id="min-samples" value="100" min="10">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Test Groups -->
+                    <div class="mb-4">
+                        <h6>Test Groups</h6>
+                        <div id="test-groups">
+                            <!-- Control Group -->
+                            <div class="card mb-3" data-group-index="0">
+                                <div class="card-body">
+                                    <h6 class="card-title">Control Group (A)</h6>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Strategy</label>
+                                            <select class="form-select group-strategy" required>
+                                                <option value="performance_based" selected>Performance Based</option>
+                                                <option value="cost_optimized">Cost Optimized</option>
+                                                <option value="latency_optimized">Latency Optimized</option>
+                                                <option value="quality_focused">Quality Focused</option>
+                                                <option value="random">Random</option>
+                                                <option value="consensus_heavy">Consensus Heavy</option>
+                                                <option value="single_provider">Single Provider</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Allocation %</label>
+                                            <input type="number" class="form-control group-allocation" value="50" min="0" max="100" required>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Variant Group -->
+                            <div class="card mb-3" data-group-index="1">
+                                <div class="card-body">
+                                    <h6 class="card-title">Variant Group (B)</h6>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Strategy</label>
+                                            <select class="form-select group-strategy" required>
+                                                <option value="performance_based">Performance Based</option>
+                                                <option value="cost_optimized" selected>Cost Optimized</option>
+                                                <option value="latency_optimized">Latency Optimized</option>
+                                                <option value="quality_focused">Quality Focused</option>
+                                                <option value="random">Random</option>
+                                                <option value="consensus_heavy">Consensus Heavy</option>
+                                                <option value="single_provider">Single Provider</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label class="form-label">Allocation %</label>
+                                            <input type="number" class="form-control group-allocation" value="50" min="0" max="100" required>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-muted mb-0">
+                            <i data-feather="info" class="me-1"></i>
+                            Total allocation must equal 100%
+                        </p>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="createTest()">Create Test</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentTestId = null;
+let performanceChart = null;
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    generateTestId();
+    loadTests();
+    
+    // Auto-refresh every 30 seconds
+    setInterval(loadTests, 30000);
+    
+    // Validate allocation percentages
+    document.querySelectorAll('.group-allocation').forEach(input => {
+        input.addEventListener('input', validateAllocations);
+    });
+});
+
+// Generate test ID
+function generateTestId() {
+    const timestamp = Date.now().toString(36);
+    const random = Math.random().toString(36).substr(2, 5);
+    document.getElementById('test-id').value = `test_${timestamp}_${random}`;
+}
+
+// Validate allocations
+function validateAllocations() {
+    const allocations = Array.from(document.querySelectorAll('.group-allocation'))
+        .map(input => parseFloat(input.value) || 0);
+    const total = allocations.reduce((sum, val) => sum + val, 0);
+    
+    const valid = Math.abs(total - 100) < 0.01;
+    document.querySelectorAll('.group-allocation').forEach(input => {
+        input.classList.toggle('is-invalid', !valid);
+    });
+    
+    return valid;
+}
+
+// Load all tests
+async function loadTests() {
+    try {
+        const response = await fetch('/api/ab-tests?include_active=true');
+        const result = await response.json();
+        
+        if (result.success) {
+            displayTests(result.results);
+        } else {
+            showError('Failed to load tests: ' + result.error);
+        }
+    } catch (error) {
+        showError('Error loading tests: ' + error.message);
+    }
+}
+
+// Display tests
+function displayTests(results) {
+    const activeTests = results.active_tests || [];
+    const completedTests = results.completed_tests || [];
+    
+    // Display active tests
+    const activeContainer = document.getElementById('active-tests');
+    if (activeTests.length === 0) {
+        activeContainer.innerHTML = '<div class="col-12"><p class="text-muted text-center">No active tests</p></div>';
+    } else {
+        activeContainer.innerHTML = activeTests.map(test => createTestCard(test, true)).join('');
+    }
+    
+    // Display completed tests
+    const completedContainer = document.getElementById('completed-tests');
+    if (completedTests.length === 0) {
+        completedContainer.innerHTML = '<div class="col-12"><p class="text-muted text-center">No completed tests</p></div>';
+    } else {
+        completedContainer.innerHTML = completedTests.map(test => createTestCard(test, false)).join('');
+    }
+    
+    // Initialize feather icons
+    feather.replace();
+}
+
+// Create test card
+function createTestCard(test, isActive) {
+    const progress = isActive ? calculateProgress(test) : 100;
+    const statusBadge = isActive ? 
+        '<span class="badge bg-success">Active</span>' : 
+        '<span class="badge bg-secondary">Completed</span>';
+    
+    const winnerBadge = !isActive && test.winner ? 
+        `<span class="badge bg-primary winner-badge ms-2">Winner: ${test.winner}</span>` : '';
+    
+    return `
+        <div class="col-md-6 col-lg-4 mb-3">
+            <div class="card test-card ${isActive ? 'active' : 'completed'}" onclick="showTestDetails('${test.test_id}')">
+                <div class="card-body">
+                    <h5 class="card-title">${test.name}</h5>
+                    <p class="mb-2">
+                        ${statusBadge}
+                        ${winnerBadge}
+                    </p>
+                    <p class="card-text text-muted mb-2">
+                        <small>Started: ${new Date(test.start_time).toLocaleString()}</small>
+                    </p>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small>Progress</small>
+                            <small>${progress}%</small>
+                        </div>
+                        <div class="progress" style="height: 5px;">
+                            <div class="progress-bar" role="progressbar" style="width: ${progress}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="row text-center">
+                        ${Object.entries(test.groups).map(([name, data]) => `
+                            <div class="col">
+                                <h6 class="mb-0">${data.allocation_percentage}%</h6>
+                                <small class="text-muted">${name}</small>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Calculate test progress
+function calculateProgress(test) {
+    const now = new Date();
+    const start = new Date(test.start_time);
+    const duration = test.duration_hours * 60 * 60 * 1000;
+    const elapsed = now - start;
+    
+    return Math.min(100, Math.round((elapsed / duration) * 100));
+}
+
+// Show test details
+async function showTestDetails(testId) {
+    currentTestId = testId;
+    const modal = new bootstrap.Modal(document.getElementById('testDetailsModal'));
+    modal.show();
+    
+    try {
+        const response = await fetch(`/api/ab-tests?test_id=${testId}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            const test = result.results.active_tests?.find(t => t.test_id === testId) ||
+                        result.results.completed_tests?.find(t => t.test_id === testId);
+            
+            if (test) {
+                displayTestDetails(test);
+            } else {
+                showError('Test not found');
+            }
+        } else {
+            showError('Failed to load test details: ' + result.error);
+        }
+    } catch (error) {
+        showError('Error loading test details: ' + error.message);
+    }
+}
+
+// Display test details
+function displayTestDetails(test) {
+    const isActive = test.status === 'active';
+    
+    document.getElementById('test-details-title').textContent = test.name;
+    document.getElementById('stop-test-btn').style.display = isActive ? 'block' : 'none';
+    
+    let html = `
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h6>Test Information</h6>
+                <table class="table table-sm">
+                    <tr><td>Status:</td><td>${test.status}</td></tr>
+                    <tr><td>Start Time:</td><td>${new Date(test.start_time).toLocaleString()}</td></tr>
+                    <tr><td>Duration:</td><td>${test.duration_hours} hours</td></tr>
+                    <tr><td>Total Samples:</td><td>${test.total_samples || 0}</td></tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h6>Group Performance</h6>
+                <canvas id="performance-chart" height="200"></canvas>
+            </div>
+        </div>
+        
+        <h6>Group Details</h6>
+        <div class="row">
+    `;
+    
+    // Add group details
+    for (const [groupName, groupData] of Object.entries(test.groups)) {
+        const results = test.results?.[groupName] || {};
+        const isWinner = test.winner === groupName;
+        
+        html += `
+            <div class="col-md-6 mb-3">
+                <div class="card ${isWinner ? 'border-success' : ''}">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            ${groupName} ${isWinner ? '<span class="badge bg-success ms-2">Winner</span>' : ''}
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-2">
+                            <strong>Strategy:</strong> ${groupData.strategy.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </p>
+                        <p class="mb-2">
+                            <strong>Allocation:</strong> ${groupData.allocation_percentage}%
+                        </p>
+                        <p class="mb-2">
+                            <strong>Samples:</strong> ${results.samples || 0}
+                        </p>
+                        
+                        <hr>
+                        
+                        <div class="row text-center">
+                            <div class="col">
+                                <h6 class="mb-0">${(results.success_rate * 100 || 0).toFixed(1)}%</h6>
+                                <small class="text-muted">Success</small>
+                            </div>
+                            <div class="col">
+                                <h6 class="mb-0">${(results.avg_latency || 0).toFixed(0)}ms</h6>
+                                <small class="text-muted">Latency</small>
+                            </div>
+                            <div class="col">
+                                <h6 class="mb-0">$${(results.avg_cost || 0).toFixed(4)}</h6>
+                                <small class="text-muted">Avg Cost</small>
+                            </div>
+                            <div class="col">
+                                <h6 class="mb-0">${(results.avg_quality || 0).toFixed(2)}</h6>
+                                <small class="text-muted">Quality</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    html += '</div>';
+    
+    // Add significance if completed
+    if (test.significance) {
+        html += `
+            <div class="alert alert-info mt-3">
+                <h6>Statistical Significance</h6>
+                <p class="mb-1"><strong>P-value:</strong> ${test.significance.p_value.toFixed(4)}</p>
+                <p class="mb-0"><strong>Confidence:</strong> ${(test.significance.confidence * 100).toFixed(1)}%</p>
+            </div>
+        `;
+    }
+    
+    document.getElementById('test-details-body').innerHTML = html;
+    
+    // Draw performance chart
+    drawPerformanceChart(test);
+    
+    // Initialize feather icons
+    feather.replace();
+}
+
+// Draw performance comparison chart
+function drawPerformanceChart(test) {
+    const ctx = document.getElementById('performance-chart').getContext('2d');
+    
+    if (performanceChart) {
+        performanceChart.destroy();
+    }
+    
+    const groups = Object.keys(test.groups);
+    const metrics = ['success_rate', 'avg_latency', 'avg_cost', 'avg_quality'];
+    const datasets = [];
+    
+    // Normalize metrics for comparison
+    const normalizedData = {};
+    metrics.forEach(metric => {
+        const values = groups.map(group => test.results?.[group]?.[metric] || 0);
+        const max = Math.max(...values);
+        normalizedData[metric] = values.map(v => max > 0 ? (v / max) * 100 : 0);
+    });
+    
+    datasets.push({
+        label: 'Success Rate',
+        data: groups.map(g => (test.results?.[g]?.success_rate || 0) * 100),
+        backgroundColor: 'rgba(40, 167, 69, 0.5)'
+    });
+    
+    datasets.push({
+        label: 'Quality Score',
+        data: groups.map(g => (test.results?.[g]?.avg_quality || 0) * 100),
+        backgroundColor: 'rgba(0, 123, 255, 0.5)'
+    });
+    
+    performanceChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: groups,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+}
+
+// Show create test modal
+function showCreateTestModal() {
+    generateTestId();
+    document.getElementById('create-test-form').reset();
+    const modal = new bootstrap.Modal(document.getElementById('createTestModal'));
+    modal.show();
+}
+
+// Create test
+async function createTest() {
+    if (!validateAllocations()) {
+        showError('Total allocation must equal 100%');
+        return;
+    }
+    
+    const groups = [];
+    document.querySelectorAll('#test-groups .card').forEach((card, index) => {
+        const strategy = card.querySelector('.group-strategy').value;
+        const allocation = parseFloat(card.querySelector('.group-allocation').value);
+        
+        groups.push({
+            name: index === 0 ? 'Control' : `Variant${index}`,
+            strategy: strategy,
+            allocation: allocation,
+            config: {}
+        });
+    });
+    
+    const testData = {
+        test_id: document.getElementById('test-id').value,
+        name: document.getElementById('test-name').value,
+        duration_hours: parseInt(document.getElementById('test-duration').value),
+        min_samples: parseInt(document.getElementById('min-samples').value),
+        groups: groups
+    };
+    
+    try {
+        const response = await fetch('/api/ab-tests', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(testData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            bootstrap.Modal.getInstance(document.getElementById('createTestModal')).hide();
+            showSuccess('Test created successfully!');
+            loadTests();
+        } else {
+            showError('Failed to create test: ' + result.error);
+        }
+    } catch (error) {
+        showError('Error creating test: ' + error.message);
+    }
+}
+
+// Stop test
+async function stopTest() {
+    if (!currentTestId) return;
+    
+    if (!confirm('Are you sure you want to stop this test? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/ab-tests/${currentTestId}/stop`, {
+            method: 'POST'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            bootstrap.Modal.getInstance(document.getElementById('testDetailsModal')).hide();
+            showSuccess('Test stopped successfully!');
+            loadTests();
+        } else {
+            showError('Failed to stop test: ' + result.error);
+        }
+    } catch (error) {
+        showError('Error stopping test: ' + error.message);
+    }
+}
+
+// Show success message
+function showSuccess(message) {
+    // You could implement a toast notification here
+    console.log('Success:', message);
+}
+
+// Show error message
+function showError(message) {
+    console.error('Error:', message);
+    // You could implement a toast notification here
+}
+</script>
+{% endblock %}
