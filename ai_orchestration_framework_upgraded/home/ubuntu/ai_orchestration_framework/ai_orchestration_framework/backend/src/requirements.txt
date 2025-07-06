@@ -1,0 +1,16 @@
+Flask
+SQLAlchemy
+python-dotenv
+requests
+asyncio
+PyYAML
+sentence-transformers
+scikit-learn
+numpy
+pytest
+black
+flake8
+mypy
+pre-commit
+aiohttp
+
